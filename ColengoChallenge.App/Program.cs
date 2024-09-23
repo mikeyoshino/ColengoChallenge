@@ -31,6 +31,16 @@ namespace ColengoChallenge.App
             {
                 client.BaseAddress = new Uri("https://localhost:7193"); // Your API base URL
             });
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowBlazorClient", policy =>
+                {
+                    policy.WithOrigins("https://localhost:7055") // Add your Blazor app's URL
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials(); // If you're using cookies/authentication, otherwise remove this
+                });
+            });
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
