@@ -18,11 +18,18 @@ namespace ColengoChallenge.App.Controllers
         [HttpGet("start")]
         public async Task<IActionResult> SyncProducts()
         {
-            var request = new GetDemoProductsRequest();
-            request.Page = 1;
-            request.PageSize = 50;
-            await _productSyncService.SyncProductsAsync(request);
-            return Ok("Products synchronized successfully.");
+            try
+            {
+                var request = new GetDemoProductsRequest();
+                request.Page = 1;
+                request.PageSize = 50;
+                await _productSyncService.SyncProductsAsync(request);
+                return Ok("Products synchronized successfully.");
+            } catch (Exception ex)
+            {
+                //log error here
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
