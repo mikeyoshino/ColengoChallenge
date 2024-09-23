@@ -26,7 +26,11 @@ namespace ColengoChallenge.App
             builder.Services.AddScoped<IProductSyncService, ProductSyncService>();
             // Add services to the container.
             builder.Services.AddRazorPages();
-
+            builder.Services.AddHttpClient();
+            builder.Services.AddHttpClient("ProductApiClient", client =>
+            {
+                client.BaseAddress = new Uri("https://localhost:7193"); // Your API base URL
+            });
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

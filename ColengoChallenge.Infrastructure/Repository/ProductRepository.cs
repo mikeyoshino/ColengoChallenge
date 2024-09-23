@@ -25,7 +25,7 @@ namespace ColengoChallenge.Infrastructure.Repository
             var totalPages = (int)Math.Ceiling(totalItems / (double)getProductRequest.PageSize);
 
             // Fetch the products for the given page
-            var products = await _dbContext.Products
+            var products = await _dbContext.Products.Include(x=>x.Price)
                 .OrderBy(p => p.Id) // Order by a specific column (e.g., Id) for consistent paging
                 .Skip((getProductRequest.Page - 1) * getProductRequest.PageSize) // Skip previous pages
                 .Take(getProductRequest.PageSize) // Take the items for the current page
@@ -45,6 +45,11 @@ namespace ColengoChallenge.Infrastructure.Repository
                 ReviewScore = p.ReviewScore,
                 ReviewCount = p.ReviewCount,
                 OverallCampaignEndDate = p.OverallCampaignEndDate,
+                Price = new PriceDto()
+                {
+                    Amount = (double)p.Price.Amount,
+                    Currency = p.Price.Currency,
+                }
                 // Map any other relevant properties if needed
             }).ToList();
 
