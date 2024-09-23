@@ -1,6 +1,6 @@
-﻿using ColengoChallenge.Api.Features.Products;
+﻿using Azure.Core;
+using ColengoChallenge.Api.Features.Products;
 using ColengoChallenge.Domain.Interfaces;
-using ColengoChallenge.Infrastructure.Repository;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ColengoChallenge.App.Controllers
@@ -15,15 +15,20 @@ namespace ColengoChallenge.App.Controllers
             ProductRepository = aProductRepository;
         }
 
-        // GET api/product?page=1&pageSize=10
+        // GET api/product/get-products?page=1&pageSize=10
         [HttpGet("get-products")]
-        public async Task<IActionResult> GetProducts([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetProducts([FromQuery] GetProductRequest request)
         {
-            var request = new GetProductRequest
+            // Validate the request parameters
+            if (request.Page <= 0)
             {
-                Page = page,
-                PageSize = pageSize
-            };
+                return BadRequest();
+            }
+
+            if (request.PageSize <= 0)
+            {
+                return BadRequest();
+            }
 
             // Fetch the products from the repository
             var response = await ProductRepository.GetProducts(request);
@@ -31,8 +36,6 @@ namespace ColengoChallenge.App.Controllers
             // Return the response as JSON
             return Ok(response);
         }
-
-
 
     }
 }
