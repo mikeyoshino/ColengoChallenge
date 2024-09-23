@@ -18,17 +18,43 @@ namespace ColengoChallenge.Infrastructure.Repository
 
         public async Task<GetProductResponse> GetProducts(GetProductRequest getProductRequest)
         {
-            // Get total number of items
-            var totalItems = await _dbContext.Products.CountAsync();
+            // Get the IQueryable for products
+            var query = _dbContext.Products.Include(x => x.Price).AsQueryable();
+
+            // Search by title if the Title is provided
+            if (!string.IsNullOrEmpty(getProductRequest.Title))
+            {
+                query = query.Where(p => p.Title.Contains(getProductRequest.Title));
+            }
+
+            // Sort products by name
+            if (!string.IsNullOrEmpty(getProductRequest.Sort))
+            {
+                if (getProductRequest.Sort.Equals("asc", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.OrderBy(p => p.Name);
+                }
+                else if (getProductRequest.Sort.Equals("desc", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.OrderByDescending(p => p.Name);
+                }
+            }
+            else
+            {
+                // Default sorting by Id if no sort option is specified
+                query = query.OrderBy(p => p.Id);
+            }
+
+            // Get the total number of items after filtering
+            var totalItems = await query.CountAsync();
 
             // Calculate total pages
             var totalPages = (int)Math.Ceiling(totalItems / (double)getProductRequest.PageSize);
 
-            // Fetch the products for the given page
-            var products = await _dbContext.Products.Include(x=>x.Price)
-                .OrderBy(p => p.Id) // Order by a specific column (e.g., Id) for consistent paging
-                .Skip((getProductRequest.Page - 1) * getProductRequest.PageSize) // Skip previous pages
-                .Take(getProductRequest.PageSize) // Take the items for the current page
+            // Fetch the products for the given page with pagination
+            var products = await query
+                .Skip((getProductRequest.Page - 1) * getProductRequest.PageSize)
+                .Take(getProductRequest.PageSize)
                 .ToListAsync();
 
             // Manually map Product to ProductDto
@@ -50,7 +76,6 @@ namespace ColengoChallenge.Infrastructure.Repository
                     Amount = (double)p.Price.Amount,
                     Currency = p.Price.Currency,
                 }
-                // Map any other relevant properties if needed
             }).ToList();
 
             // Return the response
