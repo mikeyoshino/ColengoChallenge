@@ -91,68 +91,83 @@ namespace ColengoChallenge.Infrastructure.Repository
 
         public async Task AddProductsAsync(List<ProductPayload> productPayloads)
         {
-            // Add all products
-            if(productPayloads != null)
+            if (productPayloads == null || productPayloads.Count == 0)
+                return;
+
+            foreach (var eachPayload in productPayloads)
             {
+                if (eachPayload.Product == null)
+                    continue;
 
-                foreach (var eachPayload in productPayloads)
+                // Add product first and save to generate ProductId
+                await _dbContext.Products.AddAsync(eachPayload.Product);
+                await _dbContext.SaveChangesAsync(); // Save here to generate ProductId
+
+                // Now you can use ProductId for related entities
+
+                if (eachPayload.Brand != null)
                 {
-                    if (eachPayload.Product == null)
-                        continue;
-
-                    await _dbContext.Products.AddAsync(eachPayload.Product);
-                    await _dbContext.SaveChangesAsync();
-
-                    if (eachPayload.Brand == null)
-                        continue;
                     eachPayload.Brand.ProductId = eachPayload.Product.Id;
                     await _dbContext.Brands.AddAsync(eachPayload.Brand);
+                }
 
-                    if (eachPayload.Price == null)
-                        continue;
+                if (eachPayload.Price != null)
+                {
                     eachPayload.Price.ProductId = eachPayload.Product.Id;
                     await _dbContext.Prices.AddAsync(eachPayload.Price);
+                }
 
-                    if (eachPayload.PossibleDiscountPrice == null)
-                        continue;
+                if (eachPayload.PossibleDiscountPrice != null)
+                {
                     eachPayload.PossibleDiscountPrice.ProductId = eachPayload.Product.Id;
                     await _dbContext.PossibleDiscountPrices.AddAsync(eachPayload.PossibleDiscountPrice);
+                }
 
-                    if (eachPayload.OriginalPrice == null)
-                        continue;
+                if (eachPayload.OriginalPrice != null)
+                {
                     eachPayload.OriginalPrice.ProductId = eachPayload.Product.Id;
                     await _dbContext.OriginalPrices.AddAsync(eachPayload.OriginalPrice);
+                }
 
-                    if (eachPayload.FullPriceBeforeOverallDiscount == null)
-                        continue;
+                if (eachPayload.FullPriceBeforeOverallDiscount != null)
+                {
                     eachPayload.FullPriceBeforeOverallDiscount.ProductId = eachPayload.Product.Id;
                     await _dbContext.FullPriceBeforeOverallDiscounts.AddAsync(eachPayload.FullPriceBeforeOverallDiscount);
-
-                    if (eachPayload.Tags == null)
-                        continue;
-                    foreach (var eachTag in eachPayload.Tags)
-                    {
-                        eachTag.ProductId = eachPayload.Product.Id;
-                        await _dbContext.Tags.AddAsync(eachTag);
-                    }
-                    if (eachPayload.Images == null)
-                        continue;
-                    foreach (var eachImage in eachPayload.Images)
-                    {
-                        eachImage.ProductId = eachPayload.Product.Id;
-                        await _dbContext.Images.AddAsync(eachImage);
-                    }
-                    if (eachPayload.Categories == null)
-                        continue;
-                    foreach (var eachCate in eachPayload.Categories)
-                    {
-                        eachCate.ProductId = eachPayload.Product.Id;
-                        await _dbContext.Categories.AddAsync(eachCate);
-                    }
-
                 }
-                await _dbContext.SaveChangesAsync();
+
+                // Add Tags
+                if (eachPayload.Tags?.Any() == true)
+                {
+                    foreach (var tag in eachPayload.Tags)
+                    {
+                        tag.ProductId = eachPayload.Product.Id;
+                    }
+                    await _dbContext.Tags.AddRangeAsync(eachPayload.Tags);
+                }
+
+                // Add Images
+                if (eachPayload.Images?.Any() == true)
+                {
+                    foreach (var image in eachPayload.Images)
+                    {
+                        image.ProductId = eachPayload.Product.Id;
+                    }
+                    await _dbContext.Images.AddRangeAsync(eachPayload.Images);
+                }
+
+                // Add Categories
+                if (eachPayload.Categories?.Any() == true)
+                {
+                    foreach (var category in eachPayload.Categories)
+                    {
+                        category.ProductId = eachPayload.Product.Id;
+                    }
+                    await _dbContext.Categories.AddRangeAsync(eachPayload.Categories);
+                }
             }
+
+            // Save all remaining changes in one batch after processing all entities
+            await _dbContext.SaveChangesAsync();
         }
 
         public async Task SaveChangesAsync()

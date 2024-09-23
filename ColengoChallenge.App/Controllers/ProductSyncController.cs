@@ -1,6 +1,7 @@
 ﻿using ColengoChallenge.Api.Features.Products;
 using ColengoChallenge.Domain.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ColengoChallenge.App.Controllers
 {
@@ -15,21 +16,39 @@ namespace ColengoChallenge.App.Controllers
             _productSyncService = productSyncService;
         }
 
+
         [HttpGet("start")]
-        public async Task<IActionResult> SyncProducts()
+        public async Task<IActionResult> SyncProducts([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
+            if (page <= 0 || pageSize <= 0)
+            {
+                return BadRequest("Page and PageSize must be greater than 0.");
+            }
+
             try
             {
-                var request = new GetDemoProductsRequest();
-                request.Page = 1;
-                request.PageSize = 50;
+                var request = new GetDemoProductsRequest
+                {
+                    Page = page,
+                    PageSize = pageSize
+                };
+
                 await _productSyncService.SyncProductsAsync(request);
                 return Ok("Products synchronized successfully.");
-            } catch (Exception ex)
+            }
+            catch (HttpRequestException ex)
             {
-                //log error here
-                return BadRequest(ex.Message);
+                return StatusCode(502, "Bad Gateway: Failed to fetch products.");
+            }
+            catch (DbUpdateException ex)
+            {
+                return StatusCode(500, "Internal Server Error: Failed to save products.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An unexpected error occurred. Please try again later.");
             }
         }
+
     }
 }
